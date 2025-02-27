@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Yu Yu Hakusho</title>
+  <title>Wolverine & Deadpool</title>
   <style>
     /* Reset e estilos gerais */
     * {
@@ -64,6 +64,7 @@
       opacity: 1;
       transition: opacity 0.4s;
       pointer-events: auto;
+      z-index: 1000;
     }
     
     .controls-overlay.hidden {
@@ -197,7 +198,6 @@
       width: 100%;
     }
     
-    /* Cada item da playlist é um flex container para alinhar o título à esquerda e o botão à direita */
     .playlist-container li {
       padding: 10px;
       margin-bottom: 5px;
@@ -219,7 +219,6 @@
       background-color: #444;
     }
     
-    /* Botões de download inicialmente ocultos */
     .download-btn {
       display: none;
       color: #fff;
@@ -232,10 +231,9 @@
     }
     
     .download-btn:hover {
-      background-color: red; /* Muda para vermelho ao passar o mouse */
+      background-color: red;
     }
     
-    /* Exibe os botões de download quando a playlist tem a classe .show-downloads */
     .playlist-container.show-downloads .download-btn {
       display: inline-block;
     }
@@ -243,16 +241,16 @@
     /* FULLSCREEN em 16:9 */
     :fullscreen .video-container {
       width: 100%;
-      height: 0;
-      padding-top: 56.25%;
+      height: 100%;
+      padding: 0;
       background-color: #000;
       position: relative;
       display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
       align-items: center;
-      justify-content: center;
     }
     
-    /* Em tela cheia, exibe os controles (ao invés de ocultar) */
     :fullscreen .controls-overlay {
       display: flex;
     }
@@ -320,7 +318,6 @@
       }
     }
     
-    /* Barra de rolagem personalizada na playlist */
     .playlist-container::-webkit-scrollbar {
       width: 6px;
     }
@@ -367,7 +364,6 @@
             <button id="fullscreenBtn">
               <img src="https://raw.githubusercontent.com/CirosBlack/YuYuHakusho/refs/heads/main/Tela.png" alt="Tela Cheia" />
             </button>
-            <!-- Botão para alternar a exibição dos downloads com a imagem informada -->
             <button id="toggleDownloadsBtn">
               <img src="https://raw.githubusercontent.com/CirosBlack/YuYuHakusho/refs/heads/main/down.png" alt="Mostrar Downloads" style="width:35px; height:35px;">
             </button>
@@ -411,10 +407,10 @@
     const playImage = 'https://raw.githubusercontent.com/CirosBlack/YuYuHakusho/refs/heads/main/Play.png';
     const pauseImage = 'https://raw.githubusercontent.com/CirosBlack/YuYuHakusho/refs/heads/main/Pause.png';
     
-      // Playlist com apenas os 5 primeiros episódios
+    // Playlist com apenas um vídeo
     const videos = [
-  { src: "https://huggingface.co/datasets/CirosW/RklMTUVT/resolve/main/RGVhZHBvb2wgJiBXb2x2ZXJpbmU.mp4", title: "Wolverine & Deadpool" },
-];
+      { src: "https://huggingface.co/datasets/CirosW/RklMTUVT/resolve/main/RGVhZHBvb2wgJiBXb2x2ZXJpbmU.mp4", title: "Wolverine & Deadpool" },
+    ];
     
     let currentIndex = 0;
     videoPlayer.removeAttribute('controls');
@@ -432,7 +428,6 @@
       });
     }
     
-    // Função para prevenir que o clique no botão de download propague para o LI
     function addDownloadClickPrevention() {
       const downloadButtons = document.querySelectorAll('.download-btn');
       downloadButtons.forEach(btn => {
@@ -529,7 +524,6 @@
       }
     });
     
-    // Evento na playlist para carregar o vídeo, exceto se for no botão de download
     playlist.addEventListener('click', e => {
       if ((e.target && e.target.tagName.toLowerCase() === 'li') || 
           (e.target.parentElement && e.target.parentElement.tagName.toLowerCase() === 'li')) {
@@ -622,7 +616,6 @@
       }
     });
     
-    // Botão para alternar a exibição dos downloads
     toggleDownloadsBtn.addEventListener('click', () => {
       playlistContainer.classList.toggle('show-downloads');
       if (playlistContainer.classList.contains('show-downloads')) {
@@ -632,7 +625,6 @@
       }
     });
     
-    // Lógica para exibir os controles e ocultá-los após 2 segundos (incluindo em tela cheia)
     videoContainer.addEventListener('mouseenter', () => {
       controlsOverlay.classList.remove('hidden');
       clearTimeout(hideControlsTimeout);
@@ -647,10 +639,10 @@
       }, 2000);
     });
   </script>
-<script>
-  document.addEventListener('contextmenu', function(e) {
-    e.preventDefault();
-  });
-</script>
+  <script>
+    document.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+    });
+  </script>
 </body>
 </html>
