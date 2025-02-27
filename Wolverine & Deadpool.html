@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Jaspion</title>
+  <title>Yu Yu Hakusho</title>
   <style>
     /* Reset e estilos gerais */
     * {
@@ -32,12 +32,10 @@
        ------------------------- */
     .video-container {
       position: relative;
-      max-width: 800px;
       width: 100%;
-      padding-top: 56.25%; /* proporção 16:9 */
+      padding-top: 75%; /* proporção 4:3 */
       background-color: #111;
       overflow: hidden;
-      margin: 20px auto; /* centraliza o container */
     }
     
     #videoPlayer {
@@ -85,16 +83,10 @@
       justify-content: space-between;
       align-items: center;
       width: 100%;
-      padding: 0 10px;
+      padding: 0;
     }
     
-    /* Botão centralizado de play/pause */
-    .center-buttons {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-    }
-    
+    .left-buttons,
     .right-buttons {
       display: flex;
       align-items: center;
@@ -109,6 +101,7 @@
       cursor: pointer;
       font-size: 1rem;
       border-radius: 10px;
+      position: relative;
       transition: background-color 0.3s;
     }
     
@@ -119,6 +112,7 @@
     
     /* Ajuste das imagens dentro dos botões */
     .controls-container button img {
+      margin-bottom: 0;
       width: 35px;
       height: 35px;
       transition: transform 0.2s ease;
@@ -179,6 +173,73 @@
       font-weight: bold;
     }
     
+    /* -------------------------
+       PLAYLIST
+       ------------------------- */
+    .playlist-container {
+      width: 100%;
+      background-color: #111;
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 10px;
+      scroll-behavior: smooth;
+      overflow-y: auto;
+    }
+    
+    #videoTitle {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+    
+    .playlist-container ul {
+      list-style: none;
+      width: 100%;
+    }
+    
+    /* Cada item da playlist é um flex container para alinhar o título à esquerda e o botão à direita */
+    .playlist-container li {
+      padding: 10px;
+      margin-bottom: 5px;
+      background-color: #222;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: background-color 0.3s;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .playlist-container li:hover {
+      background-color: #333;
+    }
+    
+    .playlist-container li.playing {
+      background-color: #444;
+    }
+    
+    /* Botões de download inicialmente ocultos */
+    .download-btn {
+      display: none;
+      color: #fff;
+      text-decoration: none;
+      background-color: #444;
+      padding: 5px 10px;
+      border-radius: 3px;
+      font-size: 0.8rem;
+      transition: background-color 0.3s;
+    }
+    
+    .download-btn:hover {
+      background-color: red; /* Muda para vermelho ao passar o mouse */
+    }
+    
+    /* Exibe os botões de download quando a playlist tem a classe .show-downloads */
+    .playlist-container.show-downloads .download-btn {
+      display: inline-block;
+    }
+    
     /* FULLSCREEN em 16:9 */
     :fullscreen .video-container {
       width: 100%;
@@ -191,6 +252,7 @@
       justify-content: center;
     }
     
+    /* Em tela cheia, exibe os controles (ao invés de ocultar) */
     :fullscreen .controls-overlay {
       display: flex;
     }
@@ -213,7 +275,7 @@
       body {
         flex-direction: row;
         align-items: flex-start;
-        justify-content: center;
+        justify-content: space-between;
       }
       .video-container {
         width: 70%;
@@ -224,6 +286,24 @@
         width: 100%;
         height: 100%;
         object-fit: contain;
+      }
+      .playlist-container {
+        width: 30%;
+        margin-top: 0;
+        margin-left: 0;
+        height: 100%;
+        overflow-y: auto;
+      }
+    }
+    
+    /* MODO RETRATO */
+    @media (orientation: portrait) {
+      .playlist-container {
+        height: 100%;
+        overflow-y: auto;
+        margin: 0;
+        padding: 0;
+        border-radius: 0;
       }
     }
     
@@ -238,6 +318,20 @@
       .controls-container button {
         margin-top: 5px;
       }
+    }
+    
+    /* Barra de rolagem personalizada na playlist */
+    .playlist-container::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .playlist-container::-webkit-scrollbar-track {
+      background: #000;
+    }
+    
+    .playlist-container::-webkit-scrollbar-thumb {
+      background: #0000;
+      border-radius: 10px;
     }
   </style>
 </head>
@@ -258,14 +352,24 @@
     <div class="controls-overlay" id="controlsOverlay">
       <div class="bottom-controls">
         <div class="controls-container">
-          <div class="center-buttons">
+          <div class="left-buttons">
+            <button id="prevBtn">
+              <img src="https://raw.githubusercontent.com/CirosBlack/YuYuHakusho/refs/heads/main/Voltar.png" alt="Anterior" />
+            </button>
             <button id="playPauseBtn">
               <img src="https://raw.githubusercontent.com/CirosBlack/YuYuHakusho/refs/heads/main/Play.png" alt="Play" />
+            </button>
+            <button id="nextBtn">
+              <img src="https://raw.githubusercontent.com/CirosBlack/YuYuHakusho/refs/heads/main/Avancar.png" alt="Próximo" />
             </button>
           </div>
           <div class="right-buttons">
             <button id="fullscreenBtn">
               <img src="https://raw.githubusercontent.com/CirosBlack/YuYuHakusho/refs/heads/main/Tela.png" alt="Tela Cheia" />
+            </button>
+            <!-- Botão para alternar a exibição dos downloads com a imagem informada -->
+            <button id="toggleDownloadsBtn">
+              <img src="https://raw.githubusercontent.com/CirosBlack/YuYuHakusho/refs/heads/main/down.png" alt="Mostrar Downloads" style="width:35px; height:35px;">
             </button>
           </div>
         </div>
@@ -280,6 +384,12 @@
     </div>
   </div>
   
+  <!-- PLAYLIST -->
+  <div class="playlist-container" id="playlistContainer">
+    <h2 id="videoTitle">Carregando...</h2>
+    <ul id="playlist"></ul>
+  </div>
+  
   <script>
     const videoContainer = document.getElementById('videoContainer');
     const videoPlayer = document.getElementById('videoPlayer');
@@ -288,31 +398,78 @@
     const progressBar = document.getElementById('progressBar');
     const progressHandle = document.getElementById('progressHandle');
     const timeRemaining = document.getElementById('timeRemaining');
+    const videoTitle = document.getElementById('videoTitle');
+    const playlist = document.getElementById('playlist');
+    const playlistContainer = document.getElementById('playlistContainer');
     
+    const prevBtn = document.getElementById('prevBtn');
     const playPauseBtn = document.getElementById('playPauseBtn');
+    const nextBtn = document.getElementById('nextBtn');
     const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const toggleDownloadsBtn = document.getElementById('toggleDownloadsBtn');
     
     const playImage = 'https://raw.githubusercontent.com/CirosBlack/YuYuHakusho/refs/heads/main/Play.png';
     const pauseImage = 'https://raw.githubusercontent.com/CirosBlack/YuYuHakusho/refs/heads/main/Pause.png';
     
-    // Configura o player para reproduzir apenas o vídeo único
-    videoPlayer.src = "https://huggingface.co/datasets/CirosW/RklMTUVT/resolve/main/RGVhZHBvb2wgJiBXb2x2ZXJpbmU.mp4";
+      // Playlist com apenas os 5 primeiros episódios
+    const videos = [
+  { src: "https://huggingface.co/datasets/CirosW/RklMTUVT/resolve/main/RGVhZHBvb2wgJiBXb2x2ZXJpbmU.mp4", title: "Wolverine & Deadpool" },
+];
+    
+    let currentIndex = 0;
     videoPlayer.removeAttribute('controls');
     
-    window.addEventListener('load', () => {
-      videoPlayer.play().then(() => {
-        videoPlayer.muted = false;
-        videoPlayer.volume = 1.0;
-      }).catch((err) => {
-        console.log("Erro ao tentar reproduzir o vídeo:", err);
+    function generatePlaylist() {
+      playlist.innerHTML = "";
+      videos.forEach((video, index) => {
+        const li = document.createElement('li');
+        li.dataset.src = video.src;
+        li.dataset.index = index;
+        li.dataset.title = video.title;
+        li.innerHTML = `<span class="episode-title">${video.title}</span>
+                          <a href="${video.src}?download=true" class="download-btn" download>Download</a>`;
+        playlist.appendChild(li);
       });
-      setTimeout(() => {
-        controlsOverlay.classList.add('hidden');
-      }, 2000);
-    });
+    }
     
-    videoPlayer.addEventListener('timeupdate', updateProgress);
-    videoPlayer.addEventListener('loadedmetadata', updateProgress);
+    // Função para prevenir que o clique no botão de download propague para o LI
+    function addDownloadClickPrevention() {
+      const downloadButtons = document.querySelectorAll('.download-btn');
+      downloadButtons.forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+        });
+      });
+    }
+    
+    function loadVideoByIndex(index) {
+      if (index < 0 || index >= videos.length) return;
+      currentIndex = index;
+      videoPlayer.src = videos[currentIndex].src;
+      updateVideoTitle(currentIndex);
+      videoPlayer.play().catch(() => {});
+      updatePlayPauseButton();
+      highlightCurrentItem();
+      scrollPlaylistToCurrent();
+    }
+    
+    function updateVideoTitle(index) {
+      videoTitle.textContent = videos[index].title || "Sem título";
+    }
+    
+    function highlightCurrentItem() {
+      const items = playlist.querySelectorAll('li');
+      items.forEach(li => li.classList.remove('playing'));
+      const currentLi = playlist.querySelector(`li[data-index="${currentIndex}"]`);
+      if (currentLi) currentLi.classList.add('playing');
+    }
+    
+    function scrollPlaylistToCurrent() {
+      const currentLi = playlist.querySelector(`li[data-index="${currentIndex}"]`);
+      if (currentLi) {
+        currentLi.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
     
     function formatTime(seconds) {
       if (isNaN(seconds) || seconds < 0) return "00:00";
@@ -347,36 +504,38 @@
       }
     }
     
-    playPauseBtn.addEventListener('click', () => {
-      if (videoPlayer.paused) {
-        videoPlayer.play();
-      } else {
-        videoPlayer.pause();
-      }
-      updatePlayPauseButton();
+    window.addEventListener('load', () => {
+      generatePlaylist();
+      addDownloadClickPrevention();
+      loadVideoByIndex(0);
+      videoPlayer.play().then(() => {
+        videoPlayer.muted = false;
+        videoPlayer.volume = 1.0;
+      }).catch((err) => {
+        console.log("Erro ao tentar reproduzir o vídeo:", err);
+      });
+      setTimeout(() => {
+        controlsOverlay.classList.add('hidden');
+      }, 2000);
     });
     
-    fullscreenBtn.addEventListener('click', () => {
-      if (!document.fullscreenElement) {
-        if (videoContainer.requestFullscreen) {
-          videoContainer.requestFullscreen();
-        } else if (videoContainer.webkitRequestFullscreen) {
-          videoContainer.webkitRequestFullscreen();
-        } else if (videoContainer.mozRequestFullScreen) {
-          videoContainer.mozRequestFullScreen();
-        } else if (videoContainer.msRequestFullscreen) {
-          videoContainer.msRequestFullscreen();
-        }
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-          document.webkitExitFullscreen();
-        } else if (document.mozCancelFullScreen) {
-          document.mozCancelFullScreen();
-        } else if (document.msExitFullscreen) {
-          document.msExitFullscreen();
-        }
+    videoPlayer.addEventListener('timeupdate', updateProgress);
+    videoPlayer.addEventListener('loadedmetadata', updateProgress);
+    
+    videoPlayer.addEventListener('ended', () => {
+      const nextIndex = currentIndex + 1;
+      if (nextIndex < videos.length) {
+        loadVideoByIndex(nextIndex);
+      }
+    });
+    
+    // Evento na playlist para carregar o vídeo, exceto se for no botão de download
+    playlist.addEventListener('click', e => {
+      if ((e.target && e.target.tagName.toLowerCase() === 'li') || 
+          (e.target.parentElement && e.target.parentElement.tagName.toLowerCase() === 'li')) {
+        const li = e.target.tagName.toLowerCase() === 'li' ? e.target : e.target.parentElement;
+        const index = parseInt(li.getAttribute('data-index'), 10);
+        loadVideoByIndex(index);
       }
     });
     
@@ -420,6 +579,59 @@
     window.addEventListener('mouseup', () => { isDragging = false; });
     window.addEventListener('touchend', () => { isDragging = false; });
     
+    prevBtn.addEventListener('click', () => {
+      const prevIndex = currentIndex - 1;
+      if (prevIndex >= 0) loadVideoByIndex(prevIndex);
+    });
+    
+    nextBtn.addEventListener('click', () => {
+      const nextIndex = currentIndex + 1;
+      if (nextIndex < videos.length) loadVideoByIndex(nextIndex);
+    });
+    
+    playPauseBtn.addEventListener('click', () => {
+      if (videoPlayer.paused) {
+        videoPlayer.play();
+      } else {
+        videoPlayer.pause();
+      }
+      updatePlayPauseButton();
+    });
+    
+    fullscreenBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        if (videoContainer.requestFullscreen) {
+          videoContainer.requestFullscreen();
+        } else if (videoContainer.webkitRequestFullscreen) {
+          videoContainer.webkitRequestFullscreen();
+        } else if (videoContainer.mozRequestFullScreen) {
+          videoContainer.mozRequestFullScreen();
+        } else if (videoContainer.msRequestFullscreen) {
+          videoContainer.msRequestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        }
+      }
+    });
+    
+    // Botão para alternar a exibição dos downloads
+    toggleDownloadsBtn.addEventListener('click', () => {
+      playlistContainer.classList.toggle('show-downloads');
+      if (playlistContainer.classList.contains('show-downloads')) {
+        toggleDownloadsBtn.innerHTML = `<img src="https://raw.githubusercontent.com/CirosBlack/YuYuHakusho/refs/heads/main/down.png" alt="Ocultar Downloads" style="width:35px; height:35px; transform: rotate(180deg);">`;
+      } else {
+        toggleDownloadsBtn.innerHTML = `<img src="https://raw.githubusercontent.com/CirosBlack/YuYuHakusho/refs/heads/main/down.png" alt="Mostrar Downloads" style="width:35px; height:35px;">`;
+      }
+    });
+    
     // Lógica para exibir os controles e ocultá-los após 2 segundos (incluindo em tela cheia)
     videoContainer.addEventListener('mouseenter', () => {
       controlsOverlay.classList.remove('hidden');
@@ -434,11 +646,11 @@
         controlsOverlay.classList.add('hidden');
       }, 2000);
     });
-    
-    // Impede o menu de contexto
-    document.addEventListener('contextmenu', function(e) {
-      e.preventDefault();
-    });
   </script>
+<script>
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+  });
+</script>
 </body>
 </html>
