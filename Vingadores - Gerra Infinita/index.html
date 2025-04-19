@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Player de Vídeo</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: black;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+      cursor: none;
+    }
+
+    #videoContainer {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    video {
+      width: 100%;
+      height: auto;
+      max-height: 100%;
+      background: black;
+    }
+
+    #controlsWrapper {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px;
+      box-sizing: border-box;
+      transition: opacity 0.3s ease;
+    }
+
+    button.icon-button {
+      width: 30px;
+      height: 30px;
+      border: none;
+      background: none;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      padding: 0;
+      margin-right: 2px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    button.icon-button:hover {
+      transform: scale(1.07);
+    }
+
+    input[type=range] {
+      background: transparent;
+    }
+
+    #progressBar {
+      flex-grow: 1;
+      margin: 0 10px;
+    }
+
+    #remainingTime {
+      color: white;
+      min-width: 60px;
+      text-align: right;
+      font-family: sans-serif;
+      font-size: 14px;
+      margin-left: 10px;
+    }
+
+    #volumeSlider {
+      width: 100px;
+      margin-left: 10px;
+    }
+
+    .hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body oncontextmenu="return false">
+
+<div id="videoContainer">
+  <video id="videoPlayer" autoplay playsinline>
+    <source src="https://huggingface.co/datasets/CirosW/RklMTUVT/resolve/main/VmluZ2Fkb3JlcyBHdWVycmEgSW5maW5pdGE.mp4" type="video/mp4">
+    Seu navegador não suporta a tag de vídeo.
+  </video>
+
+  <div id="controlsWrapper">
+    <button id="rewind" class="icon-button" style="background-image: url('Voltar.png');"></button>
+    <button id="playPause" class="icon-button" style="background-image: url('Play.png');"></button>
+    <button id="forward" class="icon-button" style="background-image: url('Avancar.png');"></button>
+    <input type="range" id="progressBar" min="0" max="100" value="0">
+    <span id="remainingTime">-00:00</span>
+    <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
+    <button id="fullscreen" class="icon-button" style="background-image: url('Tela cheia.png'); margin-right: 0;"></button>
+  </div>
+</div>
+
+<script>
+  const videoPlayer = document.getElementById('videoPlayer');
+  const playPauseBtn = document.getElementById('playPause');
+  const rewindBtn = document.getElementById('rewind');
+  const forwardBtn = document.getElementById('forward');
+  const progressBar = document.getElementById('progressBar');
+  const remainingTime = document.getElementById('remainingTime');
+  const volumeSlider = document.getElementById('volumeSlider');
+  const fullscreenBtn = document.getElementById('fullscreen');
+  const controlsWrapper = document.getElementById('controlsWrapper');
+  const videoContainer = document.getElementById('videoContainer');
+
+  let lastReloadTime = 0;
+  const reloadInterval = 3000;
+
+  videoPlayer.muted = false;
+
+  videoPlayer.addEventListener('timeupdate', () => {
+    if (videoPlayer.currentTime - lastReloadTime >= reloadInterval) {
+      lastReloadTime = videoPlayer.currentTime;
+      reloadVideoPreservingTimeAndFullscreen();
+    }
+    updateProgressBar();
+    updateRemainingTime();
+  });
+
+  function reloadVideoPreservingTimeAndFullscreen() {
+    const currentTime = videoPlayer.currentTime;
+    const isPaused = videoPlayer.paused;
+    const wasFullscreen = !!document.fullscreenElement;
+
+    const newSrc = 'https://huggingface.co/datasets/CirosW/RklMTUVT/resolve/main/VmluZ2Fkb3JlcyBHdWVycmEgSW5maW5pdGE.mp4?t=' + new Date().getTime();
+    const oldSource = videoPlayer.querySelector('source');
+    if (oldSource) oldSource.remove();
+
+    const newSource = document.createElement('source');
+    newSource.src = newSrc;
+    newSource.type = 'video/mp4';
+    videoPlayer.appendChild(newSource);
+    videoPlayer.load();
+
+    videoPlayer.onloadedmetadata = () => {
+      videoPlayer.currentTime = currentTime;
+      if (!isPaused) {
+        videoPlayer.play().catch(() => {});
+      }
+      if (wasFullscreen) {
+        videoContainer.requestFullscreen().catch(() => {});
+      }
+    };
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && !videoPlayer.paused) {
+      const currentTime = videoPlayer.currentTime;
+      videoPlayer.pause();
+      setTimeout(() => {
+        videoPlayer.currentTime = currentTime;
+        videoPlayer.play().catch(() => {});
+      }, 50);
+    }
+  });
+
+  playPauseBtn.addEventListener('click', () => {
+    if (videoPlayer.paused) {
+      videoPlayer.play();
+      playPauseBtn.style.backgroundImage = "url('Pause.png')";
+    } else {
+      videoPlayer.pause();
+      playPauseBtn.style.backgroundImage = "url('Play.png')";
+    }
+  });
+
+  rewindBtn.addEventListener('click', () => {
+    videoPlayer.currentTime -= 10;
+  });
+
+  forwardBtn.addEventListener('click', () => {
+    videoPlayer.currentTime += 10;
+  });
+
+  progressBar.addEventListener('input', () => {
+    videoPlayer.currentTime = (progressBar.value / 100) * videoPlayer.duration;
+  });
+
+  volumeSlider.addEventListener('input', () => {
+    videoPlayer.volume = volumeSlider.value;
+  });
+
+  fullscreenBtn.addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      videoContainer.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  });
+
+  videoPlayer.addEventListener('dblclick', () => {
+    if (!document.fullscreenElement) {
+      videoContainer.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  });
+
+  function updateProgressBar() {
+    if (videoPlayer.duration) {
+      progressBar.value = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+    }
+  }
+
+  function updateRemainingTime() {
+    if (videoPlayer.duration) {
+      const remaining = videoPlayer.duration - videoPlayer.currentTime;
+      remainingTime.textContent = '-' + formatTime(remaining);
+    }
+  }
+
+  function formatTime(time) {
+    const minutes = Math.floor(time / 60).toString().padStart(2, '0');
+    const seconds = Math.floor(time % 60).toString().padStart(2, '0');
+    return `${minutes}:${seconds}`;
+  }
+
+  let inactivityTimeout;
+  function hideControls() {
+    controlsWrapper.classList.add('hidden');
+    document.body.style.cursor = 'none';
+  }
+
+  function showControls() {
+    controlsWrapper.classList.remove('hidden');
+    document.body.style.cursor = 'default';
+    clearTimeout(inactivityTimeout);
+    inactivityTimeout = setTimeout(hideControls, 3000);
+  }
+
+  document.addEventListener('mousemove', showControls);
+  document.addEventListener('keydown', showControls);
+  showControls();
+
+  document.addEventListener('contextmenu', e => e.preventDefault());
+</script>
+
+</body>
+</html>
