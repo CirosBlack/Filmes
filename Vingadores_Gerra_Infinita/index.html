@@ -60,72 +60,41 @@
       transition: transform 0.2s ease;
     }
 
+    #forward {
+      margin-right: 10px;
+    }
+
     button.icon-button:hover {
       transform: scale(1.07);
     }
 
-    input[type=range] {
-      -webkit-appearance: none;
-      appearance: none;
-      background: transparent;
-      cursor: pointer;
+    #elapsedTime,
+    #remainingTime {
+      color: white;
+      min-width: 70px;
+      font-family: sans-serif;
+      font-size: 14px;
+      font-weight: bold;
     }
 
-    /* Barra de progresso */
-    #progressBar {
-      flex-grow: 1;
-      margin: 0 10px;
-      height: 6px;
-    }
-
-    /* Barra de volume */
-    #volumeSlider {
-      width: 100px;
-      height: 6px;
-      margin-left: 10px;
-    }
-
-    /* Estilo da trilha (track) */
-    input[type=range]::-webkit-slider-runnable-track {
-      height: 6px;
-      background: #555;
-      border-radius: 3px;
-    }
-
-    input[type=range]::-moz-range-track {
-      height: 6px;
-      background: #555;
-      border-radius: 3px;
-    }
-
-    /* Estilo do botão (thumb) */
-    input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 14px;
-      height: 14px;
-      background: white;
-      border-radius: 50%;
-      margin-top: -4px;
-      box-shadow: 0 0 2px rgba(0,0,0,0.5);
-    }
-
-    input[type=range]::-moz-range-thumb {
-      width: 14px;
-      height: 14px;
-      background: white;
-      border-radius: 50%;
-      border: none;
+    #elapsedTime {
+      text-align: left;
+      margin-right: 10px;
     }
 
     #remainingTime {
-      color: white;
-      min-width: 60px;
       text-align: right;
-      font-family: sans-serif;
-      font-size: 14px;
       margin-left: 10px;
-      font-weight: bold;
+    }
+
+    #progressBar {
+      flex-grow: 1;
+      margin: 0 10px;
+    }
+
+    #volumeSlider {
+      width: 100px;
+      margin-left: 10px;
     }
 
     .hidden {
@@ -146,8 +115,9 @@
     <button id="rewind" class="icon-button" style="background-image: url('Voltar.png');"></button>
     <button id="playPause" class="icon-button" style="background-image: url('Play.png');"></button>
     <button id="forward" class="icon-button" style="background-image: url('Avancar.png');"></button>
+    <span id="elapsedTime">00:00</span>
     <input type="range" id="progressBar" min="0" max="100" value="0">
-    <span id="remainingTime">-00:00</span>
+    <span id="remainingTime">-00:00:00</span>
     <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
     <button id="fullscreen" class="icon-button" style="background-image: url('Tela cheia.png'); margin-right: 0;"></button>
   </div>
@@ -160,60 +130,51 @@
   const forwardBtn = document.getElementById('forward');
   const progressBar = document.getElementById('progressBar');
   const remainingTime = document.getElementById('remainingTime');
+  const elapsedTime = document.getElementById('elapsedTime');
   const volumeSlider = document.getElementById('volumeSlider');
   const fullscreenBtn = document.getElementById('fullscreen');
   const controlsWrapper = document.getElementById('controlsWrapper');
   const videoContainer = document.getElementById('videoContainer');
 
-  let lastReloadTime = 0;
-  const reloadInterval = 3000;
+  function formatTime(time, forceHours = false) {
+    const hrs = Math.floor(time / 3600);
+    const mins = Math.floor((time % 3600) / 60);
+    const secs = Math.floor(time % 60);
 
-  videoPlayer.muted = false;
+    const hh = hrs.toString().padStart(2, '0');
+    const mm = mins.toString().padStart(2, '0');
+    const ss = secs.toString().padStart(2, '0');
 
-  videoPlayer.addEventListener('timeupdate', () => {
-    if (videoPlayer.currentTime - lastReloadTime >= reloadInterval) {
-      lastReloadTime = videoPlayer.currentTime;
-      reloadVideoPreservingTimeAndFullscreen();
-    }
-    updateProgressBar();
-    updateRemainingTime();
-  });
-
-  function reloadVideoPreservingTimeAndFullscreen() {
-    const currentTime = videoPlayer.currentTime;
-    const isPaused = videoPlayer.paused;
-    const wasFullscreen = !!document.fullscreenElement;
-
-    const newSrc = 'https://huggingface.co/datasets/CirosW/RklMTUVT/resolve/main/VmluZ2Fkb3JlcyBHdWVycmEgSW5maW5pdGE.mp4?t=' + new Date().getTime();
-    const oldSource = videoPlayer.querySelector('source');
-    if (oldSource) oldSource.remove();
-
-    const newSource = document.createElement('source');
-    newSource.src = newSrc;
-    newSource.type = 'video/mp4';
-    videoPlayer.appendChild(newSource);
-    videoPlayer.load();
-
-    videoPlayer.onloadedmetadata = () => {
-      videoPlayer.currentTime = currentTime;
-      if (!isPaused) {
-        videoPlayer.play().catch(() => {});
-      }
-      if (wasFullscreen) {
-        videoContainer.requestFullscreen().catch(() => {});
-      }
-    };
+    return forceHours || hrs > 0 ? `${hh}:${mm}:${ss}` : `${mm}:${ss}`;
   }
 
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && !videoPlayer.paused) {
-      const currentTime = videoPlayer.currentTime;
-      videoPlayer.pause();
-      setTimeout(() => {
-        videoPlayer.currentTime = currentTime;
-        videoPlayer.play().catch(() => {});
-      }, 50);
+  function updateTimeDisplays() {
+    if (videoPlayer.duration) {
+      const elapsed = videoPlayer.currentTime;
+      const remaining = videoPlayer.duration - elapsed;
+
+      elapsedTime.textContent = formatTime(elapsed);
+      remainingTime.textContent = '-' + formatTime(remaining, true);
     }
+  }
+
+  function updateProgressBar() {
+    if (videoPlayer.duration) {
+      const percent = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+      progressBar.value = percent;
+    }
+  }
+
+  progressBar.addEventListener('input', () => {
+    if (videoPlayer.duration) {
+      const seekTime = (progressBar.value / 100) * videoPlayer.duration;
+      videoPlayer.currentTime = seekTime;
+    }
+  });
+
+  videoPlayer.addEventListener('timeupdate', () => {
+    updateProgressBar();
+    updateTimeDisplays();
   });
 
   playPauseBtn.addEventListener('click', () => {
@@ -227,15 +188,11 @@
   });
 
   rewindBtn.addEventListener('click', () => {
-    videoPlayer.currentTime -= 10;
+    videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10);
   });
 
   forwardBtn.addEventListener('click', () => {
-    videoPlayer.currentTime += 10;
-  });
-
-  progressBar.addEventListener('input', () => {
-    videoPlayer.currentTime = (progressBar.value / 100) * videoPlayer.duration;
+    videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10);
   });
 
   volumeSlider.addEventListener('input', () => {
@@ -258,24 +215,14 @@
     }
   });
 
-  function updateProgressBar() {
-    if (videoPlayer.duration) {
-      progressBar.value = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && !videoPlayer.paused) {
+      const currentTime = videoPlayer.currentTime;
+      videoPlayer.pause();
+      videoPlayer.currentTime = currentTime + 0.001;
+      videoPlayer.play().catch(() => {});
     }
-  }
-
-  function updateRemainingTime() {
-    if (videoPlayer.duration) {
-      const remaining = videoPlayer.duration - videoPlayer.currentTime;
-      remainingTime.textContent = '-' + formatTime(remaining);
-    }
-  }
-
-  function formatTime(time) {
-    const minutes = Math.floor(time / 60).toString().padStart(2, '0');
-    const seconds = Math.floor(time % 60).toString().padStart(2, '0');
-    return `${minutes}:${seconds}`;
-  }
+  });
 
   let inactivityTimeout;
   function hideControls() {
