@@ -61,7 +61,7 @@
     }
 
     #forward {
-      margin-right: 10px; /* espaçamento adicionado */
+      margin-right: 10px;
     }
 
     button.icon-button:hover {
@@ -70,6 +70,11 @@
 
     input[type=range] {
       background: transparent;
+      appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      background-color: white;
+      outline: none;
     }
 
     #progressBar {
@@ -145,49 +150,52 @@
   videoPlayer.muted = false;
 
   videoPlayer.addEventListener('timeupdate', () => {
-    if (videoPlayer.currentTime - lastReloadTime >= reloadInterval) {
-      lastReloadTime = videoPlayer.currentTime;
-      reloadVideoPreservingTimeAndFullscreen();
-    }
     updateProgressBar();
-    updateRemainingTime();
+    updateTimeDisplays();
   });
 
-  function reloadVideoPreservingTimeAndFullscreen() {
-    const currentTime = videoPlayer.currentTime;
-    const isPaused = videoPlayer.paused;
-    const wasFullscreen = !!document.fullscreenElement;
-
-    const newSrc = 'https://huggingface.co/datasets/CirosW/RklMTUVT/resolve/main/VmluZ2Fkb3JlcyBHdWVycmEgSW5maW5pdGE.mp4?t=' + new Date().getTime();
-    const oldSource = videoPlayer.querySelector('source');
-    if (oldSource) oldSource.remove();
-
-    const newSource = document.createElement('source');
-    newSource.src = newSrc;
-    newSource.type = 'video/mp4';
-    videoPlayer.appendChild(newSource);
-    videoPlayer.load();
-
-    videoPlayer.onloadedmetadata = () => {
-      videoPlayer.currentTime = currentTime;
-      if (!isPaused) {
-        videoPlayer.play().catch(() => {});
-      }
-      if (wasFullscreen) {
-        videoContainer.requestFullscreen().catch(() => {});
-      }
-    };
+  function updateProgressBar() {
+    if (videoPlayer.duration) {
+      const percent = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+      progressBar.value = percent;
+    }
   }
 
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && !videoPlayer.paused) {
-      const currentTime = videoPlayer.currentTime;
-      videoPlayer.pause();
-      setTimeout(() => {
-        videoPlayer.currentTime = currentTime;
-        videoPlayer.play().catch(() => {});
-      }, 50);
+  function updateTimeDisplays() {
+    if (videoPlayer.duration) {
+      const elapsed = videoPlayer.currentTime;
+      const remaining = videoPlayer.duration - elapsed;
+
+      elapsedTime.textContent = formatTime(elapsed);
+      remainingTime.textContent = '-' + formatTime(remaining, true);
     }
+  }
+
+  progressBar.addEventListener('input', () => {
+    if (videoPlayer.duration) {
+      const newTime = (progressBar.value / 100) * videoPlayer.duration;
+      videoPlayer.currentTime = newTime;
+    }
+  });
+
+  function formatTime(time, forceHours = false) {
+    const hrs = Math.floor(time / 3600);
+    const mins = Math.floor((time % 3600) / 60);
+    const secs = Math.floor(time % 60);
+
+    const hh = hrs.toString().padStart(2, '0');
+    const mm = mins.toString().padStart(2, '0');
+    const ss = secs.toString().padStart(2, '0');
+
+    return forceHours || hrs > 0 ? `${hh}:${mm}:${ss}` : `${mm}:${ss}`;
+  }
+
+  rewindBtn.addEventListener('click', () => {
+    videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10);
+  });
+
+  forwardBtn.addEventListener('click', () => {
+    videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10);
   });
 
   playPauseBtn.addEventListener('click', () => {
@@ -198,18 +206,6 @@
       videoPlayer.pause();
       playPauseBtn.style.backgroundImage = "url('Play.png')";
     }
-  });
-
-  rewindBtn.addEventListener('click', () => {
-    videoPlayer.currentTime -= 10;
-  });
-
-  forwardBtn.addEventListener('click', () => {
-    videoPlayer.currentTime += 10;
-  });
-
-  progressBar.addEventListener('input', () => {
-    videoPlayer.currentTime = (progressBar.value / 100) * videoPlayer.duration;
   });
 
   volumeSlider.addEventListener('input', () => {
@@ -231,32 +227,6 @@
       document.exitFullscreen().catch(() => {});
     }
   });
-
-  function updateProgressBar() {
-    if (videoPlayer.duration) {
-      progressBar.value = (videoPlayer.currentTime / videoPlayer.duration) * 100;
-    }
-  }
-
-  function updateRemainingTime() {
-    if (videoPlayer.duration) {
-      const remaining = videoPlayer.duration - videoPlayer.currentTime;
-      remainingTime.textContent = '-' + formatTime(remaining, true);
-      elapsedTime.textContent = formatTime(videoPlayer.currentTime, false);
-    }
-  }
-
-  function formatTime(time, showHours = false) {
-    const hrs = Math.floor(time / 3600);
-    const mins = Math.floor((time % 3600) / 60);
-    const secs = Math.floor(time % 60);
-
-    const hh = hrs.toString().padStart(2, '0');
-    const mm = mins.toString().padStart(2, '0');
-    const ss = secs.toString().padStart(2, '0');
-
-    return showHours || hrs > 0 ? `${hh}:${mm}:${ss}` : `${mm}:${ss}`;
-  }
 
   let inactivityTimeout;
   function hideControls() {
