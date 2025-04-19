@@ -79,10 +79,10 @@
 
     #remainingTime, #elapsedTime {
       color: white;
-      min-width: 60px;
+      min-width: 70px;
       font-family: sans-serif;
       font-size: 14px;
-      font-weight: bold; /* negrito */
+      font-weight: bold;
     }
 
     #elapsedTime {
@@ -120,7 +120,7 @@
     <button id="forward" class="icon-button" style="background-image: url('Avancar.png');"></button>
     <span id="elapsedTime">00:00</span>
     <input type="range" id="progressBar" min="0" max="100" value="0">
-    <span id="remainingTime">-00:00</span>
+    <span id="remainingTime">-00:00:00</span>
     <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
     <button id="fullscreen" class="icon-button" style="background-image: url('Tela cheia.png'); margin-right: 0;"></button>
   </div>
@@ -241,15 +241,21 @@
   function updateRemainingTime() {
     if (videoPlayer.duration) {
       const remaining = videoPlayer.duration - videoPlayer.currentTime;
-      remainingTime.textContent = '-' + formatTime(remaining);
-      elapsedTime.textContent = formatTime(videoPlayer.currentTime);
+      remainingTime.textContent = '-' + formatTime(remaining, true);
+      elapsedTime.textContent = formatTime(videoPlayer.currentTime, false);
     }
   }
 
-  function formatTime(time) {
-    const minutes = Math.floor(time / 60).toString().padStart(2, '0');
-    const seconds = Math.floor(time % 60).toString().padStart(2, '0');
-    return `${minutes}:${seconds}`;
+  function formatTime(time, showHours = false) {
+    const hrs = Math.floor(time / 3600);
+    const mins = Math.floor((time % 3600) / 60);
+    const secs = Math.floor(time % 60);
+
+    const hh = hrs.toString().padStart(2, '0');
+    const mm = mins.toString().padStart(2, '0');
+    const ss = secs.toString().padStart(2, '0');
+
+    return showHours || hrs > 0 ? `${hh}:${mm}:${ss}` : `${mm}:${ss}`;
   }
 
   let inactivityTimeout;
