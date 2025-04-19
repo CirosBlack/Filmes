@@ -73,12 +73,20 @@
       margin: 0 10px;
     }
 
-    #remainingTime {
+    #remainingTime, #elapsedTime {
       color: white;
       min-width: 60px;
-      text-align: right;
       font-family: sans-serif;
       font-size: 14px;
+    }
+
+    #elapsedTime {
+      text-align: left;
+      margin-right: 10px;
+    }
+
+    #remainingTime {
+      text-align: right;
       margin-left: 10px;
     }
 
@@ -105,6 +113,7 @@
     <button id="rewind" class="icon-button" style="background-image: url('Voltar.png');"></button>
     <button id="playPause" class="icon-button" style="background-image: url('Play.png');"></button>
     <button id="forward" class="icon-button" style="background-image: url('Avancar.png');"></button>
+    <span id="elapsedTime">00:00</span>
     <input type="range" id="progressBar" min="0" max="100" value="0">
     <span id="remainingTime">-00:00</span>
     <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
@@ -119,6 +128,7 @@
   const forwardBtn = document.getElementById('forward');
   const progressBar = document.getElementById('progressBar');
   const remainingTime = document.getElementById('remainingTime');
+  const elapsedTime = document.getElementById('elapsedTime');
   const volumeSlider = document.getElementById('volumeSlider');
   const fullscreenBtn = document.getElementById('fullscreen');
   const controlsWrapper = document.getElementById('controlsWrapper');
@@ -227,6 +237,7 @@
     if (videoPlayer.duration) {
       const remaining = videoPlayer.duration - videoPlayer.currentTime;
       remainingTime.textContent = '-' + formatTime(remaining);
+      elapsedTime.textContent = formatTime(videoPlayer.currentTime);
     }
   }
 
