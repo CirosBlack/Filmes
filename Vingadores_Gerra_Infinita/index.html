@@ -120,6 +120,18 @@
       transition: width 0.1s linear;
     }
 
+    .progress-thumb {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 12px;
+      height: 12px;
+      background-color: white;
+      border-radius: 50%;
+      z-index: 3;
+      cursor: pointer;
+    }
+
     .hidden {
       opacity: 0;
       pointer-events: none;
@@ -142,6 +154,7 @@
     <div class="progress-container" id="progressContainer">
       <div class="buffer-bar" id="bufferBar"></div>
       <div class="progress-bar" id="progressBarVisual"></div>
+      <div class="progress-thumb" id="progressThumb"></div>
     </div>
     <span id="remainingTime">-00:00:00</span>
     <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
@@ -164,6 +177,7 @@
   const progressContainer = document.getElementById('progressContainer');
   const progressBarVisual = document.getElementById('progressBarVisual');
   const bufferBar = document.getElementById('bufferBar');
+  const progressThumb = document.getElementById('progressThumb');
 
   function formatTime(time, forceHours = false) {
     const hrs = Math.floor(time / 3600);
@@ -191,6 +205,7 @@
     if (videoPlayer.duration) {
       const percentPlayed = (videoPlayer.currentTime / videoPlayer.duration) * 100;
       progressBarVisual.style.width = `${percentPlayed}%`;
+      progressThumb.style.left = `${percentPlayed}%`;
 
       const buffered = videoPlayer.buffered;
       if (buffered.length) {
@@ -206,15 +221,33 @@
     updateTimeDisplays();
   });
 
-  videoPlayer.addEventListener('progress', () => {
-    updateProgressVisuals();
-  });
+  videoPlayer.addEventListener('progress', updateProgressVisuals);
 
   progressContainer.addEventListener('click', (e) => {
     const rect = progressContainer.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const percent = x / rect.width;
     videoPlayer.currentTime = percent * videoPlayer.duration;
+  });
+
+  let isDragging = false;
+
+  progressThumb.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    e.preventDefault();
+  });
+
+  document.addEventListener('mouseup', () => {
+    isDragging = false;
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (isDragging && videoPlayer.duration) {
+      const rect = progressContainer.getBoundingClientRect();
+      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+      const percent = x / rect.width;
+      videoPlayer.currentTime = percent * videoPlayer.duration;
+    }
   });
 
   playPauseBtn.addEventListener('click', () => {
@@ -254,6 +287,39 @@
       document.exitFullscreen().catch(() => {});
     }
   });
+
+  // Sincronização ao voltar de outra aba
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && !videoPlayer.paused) {
+      reloadVideoPreservingTimeAndFullscreen();
+    }
+  });
+
+  function reloadVideoPreservingTimeAndFullscreen() {
+    const currentTime = videoPlayer.currentTime;
+    const isPaused = videoPlayer.paused;
+    const wasFullscreen = !!document.fullscreenElement;
+
+    const newSrc = 'https://huggingface.co/datasets/CirosW/RklMTUVT/resolve/main/VmluZ2Fkb3JlcyBHdWVycmEgSW5maW5pdGE.mp4?t=' + new Date().getTime();
+    const oldSource = videoPlayer.querySelector('source');
+    if (oldSource) oldSource.remove();
+
+    const newSource = document.createElement('source');
+    newSource.src = newSrc;
+    newSource.type = 'video/mp4';
+    videoPlayer.appendChild(newSource);
+    videoPlayer.load();
+
+    videoPlayer.onloadedmetadata = () => {
+      videoPlayer.currentTime = currentTime;
+      if (!isPaused) {
+        videoPlayer.play().catch(() => {});
+      }
+      if (wasFullscreen) {
+        videoContainer.requestFullscreen().catch(() => {});
+      }
+    };
+  }
 
   let inactivityTimeout;
   function hideControls() {
