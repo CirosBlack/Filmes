@@ -253,18 +253,29 @@
 
   document.addEventListener('contextmenu', e => e.preventDefault());
 
-  // ⚡ Revalidação silenciosa (a cada 30 minutos)
+  // 🔁 Reinicialização automática a cada 1 minuto para evitar travamento
   setInterval(() => {
     if (!videoPlayer.paused && !videoPlayer.seeking) {
-      try {
-        videoPlayer.currentTime += 0.01; // pequeno avanço forçado
-      } catch (e) {
-        console.warn('Erro ao tentar revalidar stream:', e);
-      }
-    }
-  }, 30 * 60 * 1000); // 30 minutos
+      const currentTime = videoPlayer.currentTime;
+      const isPlaying = !videoPlayer.paused;
+      const src = videoPlayer.querySelector('source').src;
 
-  // Detecta travamento (vídeo parado por 10s)
+      videoPlayer.pause();
+      videoPlayer.src = '';
+      videoPlayer.load();
+
+      setTimeout(() => {
+        videoPlayer.src = src;
+        videoPlayer.load();
+        videoPlayer.currentTime = currentTime;
+        if (isPlaying) {
+          videoPlayer.play().catch(() => {});
+        }
+      }, 500);
+    }
+  }, 60 * 1000); // 60 segundos
+
+  // 🔎 Detecta travamento (vídeo parado por 10s)
   let lastTime = 0;
   setInterval(() => {
     const currentTime = videoPlayer.currentTime;
