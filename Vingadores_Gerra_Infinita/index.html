@@ -253,7 +253,7 @@
 
   document.addEventListener('contextmenu', e => e.preventDefault());
 
-  // ⚡ Revalidação silenciosa (a cada 1 minuto)
+  // ⚡ Revalidação silenciosa (a cada 30 minutos)
   setInterval(() => {
     if (!videoPlayer.paused && !videoPlayer.seeking) {
       try {
@@ -262,7 +262,7 @@
         console.warn('Erro ao tentar revalidar stream:', e);
       }
     }
-  }, 60 * 1000); // 1 minuto
+  }, 30 * 60 * 1000); // 30 minutos
 
   // Detecta travamento (vídeo parado por 10s)
   let lastTime = 0;
