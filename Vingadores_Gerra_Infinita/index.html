@@ -117,7 +117,7 @@
 <body oncontextmenu="return false">
 
 <div id="videoContainer">
-  <video id="videoPlayer" autoplay playsinline preload="auto">
+  <video id="videoPlayer" playsinline preload="auto">
     <source src="https://huggingface.co/datasets/CirosW/RklMTUVT/resolve/main/VmluZ2Fkb3JlcyBHdWVycmEgSW5maW5pdGE.mp4" type="video/mp4">
     Seu navegador não suporta a tag de vídeo.
   </video>
@@ -223,9 +223,17 @@
     }
   });
 
+  // Re-sincroniza ao voltar de outra aba
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && videoPlayer.paused) {
-      videoPlayer.play().catch(() => {});
+    if (!document.hidden) {
+      const wasPaused = videoPlayer.paused;
+      const currentTime = videoPlayer.currentTime;
+
+      videoPlayer.pause();
+      videoPlayer.currentTime = currentTime + 0.01; // avanço mínimo
+      if (!wasPaused) {
+        videoPlayer.play().catch(() => {});
+      }
     }
   });
 
@@ -269,6 +277,11 @@
 
   // Reinicia a cada 50 minutos (3000 segundos)
   setInterval(restartVideo, 3000 * 1000);
+
+  // Inicialização manual para evitar problemas com autoplay
+  window.addEventListener('load', () => {
+    videoPlayer.play().catch(() => {});
+  });
 </script>
 
 </body>
