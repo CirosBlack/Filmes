@@ -135,7 +135,7 @@
 </div>
 
 <script>
-  const videoPlayer = document.getElementById('videoPlayer');
+  let videoPlayer = document.getElementById('videoPlayer');
   const playPauseBtn = document.getElementById('playPause');
   const rewindBtn = document.getElementById('rewind');
   const forwardBtn = document.getElementById('forward');
@@ -253,29 +253,49 @@
 
   document.addEventListener('contextmenu', e => e.preventDefault());
 
-  // 🔁 Reinicialização automática a cada 1 minuto para evitar travamento
+  // 🔁 Reinicialização suave a cada 60 segundos para evitar travamentos
   setInterval(() => {
     if (!videoPlayer.paused && !videoPlayer.seeking) {
       const currentTime = videoPlayer.currentTime;
       const isPlaying = !videoPlayer.paused;
       const src = videoPlayer.querySelector('source').src;
 
-      videoPlayer.pause();
-      videoPlayer.src = '';
-      videoPlayer.load();
+      const newVideo = document.createElement('video');
+      newVideo.playsInline = true;
+      newVideo.preload = "auto";
+      newVideo.muted = videoPlayer.muted;
+      newVideo.volume = videoPlayer.volume;
+      newVideo.style.width = "100%";
+      newVideo.style.height = "auto";
+      newVideo.style.maxHeight = "100%";
+      newVideo.style.position = "absolute";
+      newVideo.style.top = "0";
+      newVideo.style.left = "0";
+      newVideo.style.zIndex = "1";
+      newVideo.style.background = "black";
 
-      setTimeout(() => {
-        videoPlayer.src = src;
-        videoPlayer.load();
-        videoPlayer.currentTime = currentTime;
-        if (isPlaying) {
-          videoPlayer.play().catch(() => {});
-        }
-      }, 500);
+      const newSource = document.createElement('source');
+      newSource.src = src;
+      newSource.type = "video/mp4";
+      newVideo.appendChild(newSource);
+
+      newVideo.addEventListener('loadedmetadata', () => {
+        newVideo.currentTime = currentTime;
+      });
+
+      newVideo.addEventListener('canplay', () => {
+        videoContainer.insertBefore(newVideo, videoPlayer);
+        if (isPlaying) newVideo.play().catch(() => {});
+        videoPlayer.remove();
+        newVideo.id = "videoPlayer";
+        videoPlayer = newVideo;
+      });
+
+      newVideo.load();
     }
-  }, 60 * 1000); // 60 segundos
+  }, 60 * 1000); // a cada 60 segundos
 
-  // 🔎 Detecta travamento (vídeo parado por 10s)
+  // 🔎 Detecta travamento
   let lastTime = 0;
   setInterval(() => {
     const currentTime = videoPlayer.currentTime;
