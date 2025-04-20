@@ -180,11 +180,6 @@
     }
   });
 
-  videoPlayer.addEventListener('timeupdate', () => {
-    updateProgressBar();
-    updateTimeDisplays();
-  });
-
   playPauseBtn.addEventListener('click', () => {
     if (videoPlayer.paused) {
       videoPlayer.play();
@@ -253,7 +248,27 @@
 
   document.addEventListener('contextmenu', e => e.preventDefault());
 
-  // 🔁 Reinicialização suave a cada 60 segundos para evitar travamentos
+  // Reanexar eventos sempre que o vídeo for trocado
+  function attachVideoEvents(video) {
+    video.addEventListener('timeupdate', () => {
+      updateProgressBar();
+      updateTimeDisplays();
+    });
+
+    video.addEventListener('dblclick', () => {
+      if (!document.fullscreenElement) {
+        videoContainer.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    volumeSlider.addEventListener('input', () => {
+      video.volume = volumeSlider.value;
+    });
+  }
+
+  // 🔁 Reinicialização suave com sincronização precisa
   setInterval(() => {
     if (!videoPlayer.paused && !videoPlayer.seeking) {
       const currentTime = videoPlayer.currentTime;
@@ -281,21 +296,22 @@
 
       newVideo.addEventListener('loadedmetadata', () => {
         newVideo.currentTime = currentTime;
-      });
 
-      newVideo.addEventListener('canplay', () => {
-        videoContainer.insertBefore(newVideo, videoPlayer);
-        if (isPlaying) newVideo.play().catch(() => {});
-        videoPlayer.remove();
-        newVideo.id = "videoPlayer";
-        videoPlayer = newVideo;
+        newVideo.addEventListener('seeked', () => {
+          if (isPlaying) newVideo.play().catch(() => {});
+          videoContainer.insertBefore(newVideo, videoPlayer);
+          videoPlayer.remove();
+          newVideo.id = "videoPlayer";
+          videoPlayer = newVideo;
+          attachVideoEvents(videoPlayer);
+        }, { once: true });
       });
 
       newVideo.load();
     }
-  }, 60 * 1000); // a cada 60 segundos
+  }, 60 * 1000);
 
-  // 🔎 Detecta travamento
+  // 🔎 Detecta travamento (vídeo parado por 10s)
   let lastTime = 0;
   setInterval(() => {
     const currentTime = videoPlayer.currentTime;
@@ -309,6 +325,7 @@
   }, 10000);
 
   window.addEventListener('load', () => {
+    attachVideoEvents(videoPlayer);
     videoPlayer.play().catch(() => {});
   });
 </script>
