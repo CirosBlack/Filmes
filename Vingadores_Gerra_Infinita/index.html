@@ -248,7 +248,6 @@
 
   document.addEventListener('contextmenu', e => e.preventDefault());
 
-  // Reanexar eventos sempre que o vídeo for trocado
   function attachVideoEvents(video) {
     video.addEventListener('timeupdate', () => {
       updateProgressBar();
@@ -268,7 +267,7 @@
     });
   }
 
-  // 🔁 Reinicialização suave com sincronização precisa
+  // Reinicialização suave a cada 30 minutos
   setInterval(() => {
     if (!videoPlayer.paused && !videoPlayer.seeking) {
       const currentTime = videoPlayer.currentTime;
@@ -309,9 +308,9 @@
 
       newVideo.load();
     }
-  }, 60 * 1000);
+  }, 30 * 60 * 1000); // ⏱️ 30 minutos
 
-  // 🔎 Detecta travamento (vídeo parado por 10s)
+  // Detecta travamento
   let lastTime = 0;
   setInterval(() => {
     const currentTime = videoPlayer.currentTime;
