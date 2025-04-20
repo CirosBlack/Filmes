@@ -227,8 +227,6 @@
     if (!document.hidden) {
       const wasPaused = videoPlayer.paused;
       const currentTime = videoPlayer.currentTime;
-
-      videoPlayer.pause();
       videoPlayer.currentTime = currentTime + 0.01;
       if (!wasPaused) {
         videoPlayer.play().catch(() => {});
@@ -255,35 +253,26 @@
 
   document.addEventListener('contextmenu', e => e.preventDefault());
 
-  // Reinicializa o vídeo mantendo o ponto
-  function restartVideo() {
-    const currentTime = videoPlayer.currentTime;
+  // ⚡ Revalidação silenciosa (a cada 1 minuto)
+  setInterval(() => {
+    if (!videoPlayer.paused && !videoPlayer.seeking) {
+      try {
+        videoPlayer.currentTime += 0.01; // pequeno avanço forçado
+      } catch (e) {
+        console.warn('Erro ao tentar revalidar stream:', e);
+      }
+    }
+  }, 60 * 1000); // 1 minuto
 
-    videoPlayer.pause();
-    const source = videoPlayer.querySelector('source');
-    const currentSrc = source.src;
-
-    videoPlayer.src = '';
-    source.src = currentSrc;
-    videoPlayer.load();
-
-    videoPlayer.addEventListener('loadeddata', function onLoad() {
-      videoPlayer.currentTime = currentTime;
-      videoPlayer.play().catch(() => {});
-      videoPlayer.removeEventListener('loadeddata', onLoad);
-    });
-  }
-
-  // Reinicia a cada 5 minutos (teste)
-  setInterval(restartVideo, 300 * 1000);
-
-  // Detecta travamento (vídeo travado por 10s sem avanço)
+  // Detecta travamento (vídeo parado por 10s)
   let lastTime = 0;
   setInterval(() => {
     const currentTime = videoPlayer.currentTime;
     if (!videoPlayer.paused && Math.abs(currentTime - lastTime) < 0.5) {
-      console.warn("Detectado possível travamento. Reiniciando...");
-      restartVideo();
+      console.warn("Detectado possível travamento. Forçando pequeno avanço...");
+      try {
+        videoPlayer.currentTime += 0.01;
+      } catch (e) {}
     }
     lastTime = currentTime;
   }, 10000);
