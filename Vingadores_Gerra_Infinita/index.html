@@ -103,7 +103,6 @@
     }
   </style>
 
-  <!-- Script que calcula a altura real da viewport -->
   <script>
     function setRealVh() {
       const vh = window.innerHeight * 0.01;
@@ -118,7 +117,7 @@
 <body oncontextmenu="return false">
 
 <div id="videoContainer">
-  <video id="videoPlayer" autoplay playsinline>
+  <video id="videoPlayer" autoplay playsinline preload="auto">
     <source src="https://huggingface.co/datasets/CirosW/RklMTUVT/resolve/main/VmluZ2Fkb3JlcyBHdWVycmEgSW5maW5pdGE.mp4" type="video/mp4">
     Seu navegador não suporta a tag de vídeo.
   </video>
@@ -152,11 +151,9 @@
     const hrs = Math.floor(time / 3600);
     const mins = Math.floor((time % 3600) / 60);
     const secs = Math.floor(time % 60);
-
     const hh = hrs.toString().padStart(2, '0');
     const mm = mins.toString().padStart(2, '0');
     const ss = secs.toString().padStart(2, '0');
-
     return forceHours || hrs > 0 ? `${hh}:${mm}:${ss}` : `${mm}:${ss}`;
   }
 
@@ -164,7 +161,6 @@
     if (videoPlayer.duration) {
       const elapsed = videoPlayer.currentTime;
       const remaining = videoPlayer.duration - elapsed;
-
       elapsedTime.textContent = formatTime(elapsed);
       remainingTime.textContent = '-' + formatTime(remaining, true);
     }
@@ -228,10 +224,7 @@
   });
 
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && !videoPlayer.paused) {
-      const currentTime = videoPlayer.currentTime;
-      videoPlayer.pause();
-      videoPlayer.currentTime = currentTime + 0.001;
+    if (!document.hidden && videoPlayer.paused) {
       videoPlayer.play().catch(() => {});
     }
   });
@@ -254,6 +247,28 @@
   showControls();
 
   document.addEventListener('contextmenu', e => e.preventDefault());
+
+  // Reinicializa o vídeo a cada 50 minutos mantendo o ponto
+  function restartVideo() {
+    const currentTime = videoPlayer.currentTime;
+
+    videoPlayer.pause();
+    const source = videoPlayer.querySelector('source');
+    const currentSrc = source.src;
+
+    videoPlayer.src = '';
+    source.src = currentSrc;
+    videoPlayer.load();
+
+    videoPlayer.addEventListener('loadeddata', function onLoad() {
+      videoPlayer.currentTime = currentTime;
+      videoPlayer.play().catch(() => {});
+      videoPlayer.removeEventListener('loadeddata', onLoad);
+    });
+  }
+
+  // Reinicia a cada 50 minutos (3000 segundos)
+  setInterval(restartVideo, 3000 * 1000);
 </script>
 
 </body>
